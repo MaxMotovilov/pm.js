@@ -1,6 +1,6 @@
 "use strict";
 
-const parseHeading = require('./parse');
+const {parseHeading, parseTemplate} = require('./parse');
 
 exports.firstOf = matchPattern(firstMatch);
 exports.distinct = matchPattern(onlyMatch);
@@ -11,6 +11,7 @@ function matchPattern(strategy) {
     return (template, ...functions) => function(...args) {
         return functions[
             (template[selector] || (
+                parseTemplate(template),
                 Object.defineProperty(
                     template,
                     selector,
