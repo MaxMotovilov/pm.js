@@ -11,7 +11,11 @@ function matchPattern(strategy) {
     return (template, ...functions) => function(...args) {
         return functions[
             (template[selector] || (
-                template[selector] = strategy(functions.map(fn => parseHeading(fn.toString())))
+                Object.defineProperty(
+                    template,
+                    selector,
+                    {value: strategy(functions.map(fn => parseHeading(fn.toString()))}
+                )[selector]
             ))(args)
         ].apply(this, args);
     }
