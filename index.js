@@ -8,12 +8,13 @@ exports.distinct = matchPattern(onlyMatch);
 const wrapper = Symbol('pm.js: compiled wrapper');
 
 function matchPattern(strategy) {
-    return (template, ...functions) =>
-        (...args) => functions[
+    return (template, ...functions) => function(...args) {
+        return functions[
             (template[wrapper] || (
                 template[wrapper] = strategy(functions.map(fn => parseHeading(fn.toString())))
             ))(args)
-        ](...args);
+        ].apply(this, args);
+    }
 }
 
 function firstMatch(patterns) {
