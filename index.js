@@ -5,13 +5,13 @@ const parseHeading = require('./parse');
 exports.firstOf = matchPattern(firstMatch);
 exports.distinct = matchPattern(onlyMatch);
 
-const wrapper = Symbol('pm.js: compiled wrapper');
+const selector = Symbol('pm.js: pattern selector');
 
 function matchPattern(strategy) {
     return (template, ...functions) => function(...args) {
         return functions[
-            (template[wrapper] || (
-                template[wrapper] = strategy(functions.map(fn => parseHeading(fn.toString())))
+            (template[selector] || (
+                template[selector] = strategy(functions.map(fn => parseHeading(fn.toString())))
             ))(args)
         ].apply(this, args);
     }
