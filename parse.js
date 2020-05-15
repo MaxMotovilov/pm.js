@@ -98,13 +98,15 @@ function parse(source, terminator) {
         if(token)
             offs = regexp.lastIndex;
         else if(mustMatch) {
-            throw Error(`BUG: expecting ${tokenList(mustMatch)} after ${
-                source.substr(0, offs).replace(
-                    /"(\d+)"/g, (_, stringId) => '"' + strings[stringId] + '"'
-                )
-            }`);
+            throw Error(`BUG: expecting ${tokenList(mustMatch)} after ${cleanSource(0, offs)}`);
         }
         return token;
+    }
+
+    function cleanSource(...substrArgs) {
+        return source.substr(...substrArgs).replace(
+            /"(\d+)"/g, (_, stringId) => '"' + strings[stringId] + '"'
+        );
     }
 
     function listedArguments() {
@@ -120,7 +122,7 @@ function parse(source, terminator) {
         } while(token==',');
 
         if(token!=currentTerminator())
-            throw Error(`BUG: expected ${currentTerminator()}, got ${token} in ${source.substr(0, offs)} before ${source.substr(offs)}`);
+            throw Error(`BUG: expected ${currentTerminator()}, got ${token} in ${cleanSource(0, offs)} before ${cleanSource(offs)}`);
 
         terminators.pop();
     }
