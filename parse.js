@@ -98,7 +98,7 @@ function parse(source, terminator) {
         if(token)
             offs = regexp.lastIndex;
         else if(mustMatch) {
-            throw Error(`BUG: expecting ${tokenList(mustMatch)} after ${cleanSource(0, offs)}`);
+            throw SyntaxError(`Expected ${tokenList(mustMatch)} after ${cleanSource(0, offs)}`);
         }
         return token;
     }
@@ -122,7 +122,7 @@ function parse(source, terminator) {
         } while(token==',');
 
         if(token!=currentTerminator())
-            throw Error(`BUG: expected ${currentTerminator()}, got ${token} in ${cleanSource(0, offs)} before ${cleanSource(offs)}`);
+            throw SyntaxError(`Expected ${currentTerminator()}, got ${token} in ${cleanSource(0, offs)} before ${cleanSource(offs)}`);
 
         terminators.pop();
     }
