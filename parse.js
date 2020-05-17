@@ -1,5 +1,7 @@
 "use strict";
 
+const pattern = require('./pattern');
+
 exports.parseTemplate =
     template => {
         if(!template.every(fragment => /^\s*$/.test(fragment)))
@@ -69,7 +71,7 @@ function tokenList(tokens) {
 const brackets = {'(':')', '[':']', '{':'}'}
 
 function parse(source, terminator) {
-    let offs=0, strings;
+    let offs=0, strings, depth=0;
     const terminators = [];
 
     [source, strings] = collapseCommentsAndStrings(source);
@@ -78,11 +80,15 @@ function parse(source, terminator) {
         terminators.push(terminator);
 
     const
+        {add, drop, requireArray, finish} = pattern(),
         currentTerminator = () => terminators[terminators.length-1],
         nextToken = (...choices) => match(tokenMatcher(choices), choices),
         maybeNextToken = (...choices) => match(tokenMatcher(choices)),
         tokenAhead = (...choices) => match(tokenMatcher([...choices, ',', currentTerminator()], true), ['expression']),
-        isAName = token => /[A-Za-z_\$]/.test(token[0]);
+        isAName = token => /[A-Za-z_\$]/.test(token[0]),
+        isAString = token => token[0]=='"',
+        isANumber = token => /\d|\./.test(token[0]),
+        stringValue = token => strings[token.substring(1, token.length-1)];
 
     if(maybeNextToken('('))
         terminators.push(')');
@@ -91,6 +97,8 @@ function parse(source, terminator) {
 
     while(terminators.length)
         nextToken(terminators.pop());
+
+    return finish();
 
     function match(regexp, mustMatch) {
         regexp.lastIndex = offs;
@@ -105,20 +113,25 @@ function parse(source, terminator) {
 
     function cleanSource(...substrArgs) {
         return source.substr(...substrArgs).replace(
-            /"(\d+)"/g, (_, stringId) => '"' + strings[stringId] + '"'
+            /"\d+"/g, token => '"' + stringValue(token) + '"'
         );
     }
 
     function listedArguments() {
-        let token;
+        let token, index=0;
 
         do {
             token = nextToken('[', '{', ',', '...', 'name', currentTerminator());
             if(token!=currentTerminator() && token!=',') {
-                if(!maybeNested(token) && token=='...')
+                if(token=='...') {
                     nextToken('name');
+                } else {
+                    add(depth, index);
+                    maybeNested(token);
+                }
                 token = maybeInitializer();
             }
+            ++index;
         } while(token==',');
 
         if(token!=currentTerminator())
@@ -142,7 +155,7 @@ function parse(source, terminator) {
                         nextToken(']');
                     }
 
-                    // token = key
+                    add(depth, isAString(token) ? stringValue(token) : isANumber(token) ? Number(token) : token);
 
                     if((isAName(token) ? maybeNextToken : nextToken)(':'))
                         maybeNested(nextToken('name', '{', '['));
@@ -159,12 +172,13 @@ function parse(source, terminator) {
         if(token=='[' || token=='{') {
             terminators.push(brackets[token]);
             if(token=='[')
+                requireArray(depth);
+            ++depth;
+            if(token=='[')
                 listedArguments();
             else
                 namedArguments();
-            return true;
-        } else {
-            return false;
+            --depth;
         }
     }
 
@@ -173,6 +187,7 @@ function parse(source, terminator) {
         let token = nextToken(',', currentTerminator(), '=');
 
         if(token=='=') {
+            drop(depth);
             const top = terminators.length;
             while(
                 (token = tokenAhead('(', '[', '{')) in brackets ||
