@@ -1,45 +1,58 @@
 "use strict";
 
 module.exports = function() {
-    const tree = {}, stack = [{tree}];
+    const
+        queue = [],
+        nesting = [],
+        {arrayAt, hashAt, up, result} = code();
+
+    function add(check, depth) {
+        if(nesting.length>depth) {
+            queue.push(up(nesting.length-depth));
+            nesting.splice(depth);
+        }
+        nesting.push(queue.length);
+        queue.push(check);
+    }
+
+    function drop(depth) {
+        if(nesting.length>depth) {
+            nesting.splice(depth+1);
+            queue.splice(nesting.pop());
+        }
+    }
+
+    function finish() {
+        return result(queue);
+    }
 
     return {
-        add(depth, key) {
-            while(stack.length>depth+1)
-                stack.pop();
-            if(stack.length!=depth+1)
-                throw Error(`BUG: nothing at depth ${depth} (inserting ${key})`);
-            if(!stack[depth].tree) {
-                if(depth<1)
-                    throw Error(`BUG: orphaned key ${stack[depth]} at root  (inserting ${key})`);
-                stack[depth] = {key: stack[depth], tree: (
-                    stack[depth-1].tree[stack[depth]]={}
-                )}
-            }
-            stack.push(key);
+        openArray(key, depth) {
+            add(arrayAt(key), depth);
         },
-
-        drop(depth) {
-            while(stack.length>depth+2)
-                stack.pop();
-            if(stack.length!=depth+2)
-                throw Error(`BUG: no key at depth ${depth}`);
-            if(stack[depth+1].key)
-                delete stack[depth].tree[stack[depth+1].key];
-            stack.pop();
+        openHash(key, depth) {
+            add(hashAt(key), depth);
         },
+        drop,
+        finish
+    }
+}
 
-        requireArray(depth) {
-            if(stack.length!=depth+2 || stack[depth+1].tree)
-                throw Error(`BUG: stack out of sync at ${depth}`);
-            stack[depth+1] = {key: stack[depth+1], tree: (
-                stack[depth].tree[stack[depth+1]]=[]
-            )}
+function code() {
+    const tree = [], stack = [tree];
+    return {
+        arrayAt(key) {
+            return () => stack.push(stack[stack.length-1][key] = []);
         },
-
-        finish() {
+        hashAt(key) {
+            return () => stack.push(stack[stack.length-1][key] = {});
+        },
+        up(n) {
+            return () => stack.splice(stack.length-n);
+        },
+        result(list) {
+            list.forEach(list => list());
             console.log(JSON.stringify(tree));
         }
     }
 }
-

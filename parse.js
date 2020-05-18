@@ -80,7 +80,7 @@ function parse(source, terminator) {
         terminators.push(terminator);
 
     const
-        {add, drop, requireArray, finish} = pattern(),
+        {openArray, openHash, drop, finish} = pattern(),
         currentTerminator = () => terminators[terminators.length-1],
         nextToken = (...choices) => match(tokenMatcher(choices), choices),
         maybeNextToken = (...choices) => match(tokenMatcher(choices)),
@@ -123,12 +123,10 @@ function parse(source, terminator) {
         do {
             token = nextToken('[', '{', ',', '...', 'name', currentTerminator());
             if(token!=currentTerminator() && token!=',') {
-                if(token=='...') {
+                if(token=='...')
                     nextToken('name');
-                } else {
-                    add(depth, index);
-                    maybeNested(token);
-                }
+                else
+                    maybeNested(token, index);
                 token = maybeInitializer();
             }
             ++index;
@@ -155,10 +153,11 @@ function parse(source, terminator) {
                         nextToken(']');
                     }
 
-                    add(depth, isAString(token) ? stringValue(token) : isANumber(token) ? Number(token) : token);
-
                     if((isAName(token) ? maybeNextToken : nextToken)(':'))
-                        maybeNested(nextToken('name', '{', '['));
+                        maybeNested(
+                            nextToken('name', '{', '['),
+                            isAString(token) ? stringValue(token) : isANumber(token) ? Number(token) : token
+                        );
                 }
 
                 token = maybeInitializer();
@@ -168,16 +167,16 @@ function parse(source, terminator) {
         terminators.pop();
     }
 
-    function maybeNested(token) {
+    function maybeNested(token, key) {
         if(token=='[' || token=='{') {
             terminators.push(brackets[token]);
-            if(token=='[')
-                requireArray(depth);
-            ++depth;
-            if(token=='[')
+            if(token=='[') {
+                openArray(key, depth++);
                 listedArguments();
-            else
+            } else {
+                openHash(key, depth++);
                 namedArguments();
+            }
             --depth;
         }
     }
