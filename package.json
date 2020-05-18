@@ -1,6 +1,6 @@
 {
   "name": "pm.js",
-  "version": "0.1",
+  "version": "0.0.1",
   "description": "Pattern matching for ES6 - a prototype",
   "main": "index.js",
   "repository": {
@@ -11,5 +11,13 @@
   "license": "MIT",
   "engines": {
     "node": ">= 8"
+  },
+  "devDependencies": {
+    "faucet": "0.0.1",
+    "tape": "^5.0.0",
+    "tape-catch": "^1.0.6"
+  },
+  "scripts": {
+    "test": "find ./test -name '*.js' | xargs -n 1 node | ./node_modules/.bin/faucet"
   }
 }
