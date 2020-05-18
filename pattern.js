@@ -58,7 +58,7 @@ function code() {
                             return value && typeof value==='object' && stack.push(value);
                         },
                         up(n) {
-                            stack.splice(stack.length-n);
+                            stack.splice(-n);
                             return true;
                         }
                     }
