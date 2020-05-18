@@ -39,20 +39,31 @@ module.exports = function() {
 }
 
 function code() {
-    const tree = [], stack = [tree];
     return {
-        arrayAt(key) {
-            return () => stack.push(stack[stack.length-1][key] = []);
-        },
-        hashAt(key) {
-            return () => stack.push(stack[stack.length-1][key] = {});
-        },
-        up(n) {
-            return () => stack.splice(stack.length-n);
-        },
-        result(list) {
-            list.forEach(list => list());
-            console.log(JSON.stringify(tree));
+        arrayAt: key => ({arrayAt}) => arrayAt(key),
+        hashAt: key => ({hashAt}) => hashAt(key),
+        up: n => ({up}) => up(n),
+
+        result(commands) {
+            return args => {
+                const
+                    stack = [args],
+                    implementations = {
+                        arrayAt(key) {
+                            const value = stack[stack.length-1][key];
+                            return Array.isArray(value) && stack.push(value);
+                        },
+                        hashAt(key) {
+                            const value = stack[stack.length-1][key];
+                            return value && typeof value==='object' && stack.push(value);
+                        },
+                        up(n) {
+                            stack.splice(stack.length-n);
+                            return true;
+                        }
+                    }
+                return commands.every(command => command(implementations));
+            }
         }
     }
 }
