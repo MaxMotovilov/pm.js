@@ -87,9 +87,9 @@ uniqueness guarantees for the first argument of tag function.
 named functions, arrow functions, arbitrary initializing expressions, member renaming, rest, quoted property names in object members -- but introduces
 a number of restrictions:
 
-.* No template literals in initializers;
-.* No regular expression literals in initializers;
-.* No computed object property names; the `[`_property_`]:`_alias_ syntax is supported only when _property_ is a valid string or numeric literal. This
+  * No template literals in initializers;
+  * No regular expression literals in initializers;
+  * No computed object property names; the `[`_property_`]:`_alias_ syntax is supported only when _property_ is a valid string or numeric literal. This
 last restriction is more of a semantic than a syntax issue as references to closure variables from the computed property name could not be resolved
 from the wrapper code without using `eval()`.
 
