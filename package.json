@@ -18,6 +18,6 @@
     "tape-catch": "^1.0.6"
   },
   "scripts": {
-    "test": "find ./test -name '*.js' | xargs -n 1 node | ./node_modules/.bin/faucet"
+    "test": "find ./test -name '*.js' -exec sh -c \"node {} | ./node_modules/.bin/faucet\" \\;"
   }
 }
