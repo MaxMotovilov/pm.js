@@ -53,7 +53,7 @@ supplied data. This library seeks to prototype this ability with minimum of tool
 
 ## API
 
-The library exports two freestanding functions, `firstOf()` and `distinct()` intended to be used as tags for
+The library exports two freestanding functions, `firstOf()` and `distinct()`, intended to be used as tags for
 [ES6 template literals](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals). The template strings must not contain
 anything other than whitespace and function definitions as placeholder expressions. Either of the tagged templates evaluate to a wrapper function
 that calls exactly one of the supplied alternative function definitions passing it the argument values and `this` it received from the caller, or throws a
@@ -83,7 +83,7 @@ the ES6 features it uses: destructuring syntax, template literals and `WeakMap`.
 function bodies is performed only once during first call and the resulting wrapper function is cached, relying on the stability and
 uniqueness guarantees for the first argument of tag function.
 
-* [A relatively simple parsing code](blob/master/parse.js) for the function declarations supports a wide subset of ES6 syntax -- comments, anonymous and
+* [A relatively simple parsing code](parse.js) for the function declarations supports a wide subset of ES6 syntax -- comments, anonymous and
 named functions, arrow functions, arbitrary initializing expressions, member renaming, rest, quoted property names in object members -- but introduces
 a number of restrictions:
 
