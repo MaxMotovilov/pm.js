@@ -5,20 +5,23 @@ const {parseHeading, parseTemplate} = require('./parse');
 exports.firstOf = matchPattern(firstMatch);
 exports.distinct = matchPattern(onlyMatch);
 
-const selector = Symbol('pm.js: pattern selector');
+const cachedSelector = (cache => (template, make) => {
+    let selector = cache.get(template);
+    if(!selector)
+        cache.set(template, selector = make());
+    return selector;
+})(new WeakMap);
 
 function matchPattern(strategy) {
-    return (template, ...functions) => function(...args) {
-        return functions[
-            (template[selector] || (
-                parseTemplate(template),
-                Object.defineProperty(
-                    template,
-                    selector,
-                    {value: strategy(functions.map(fn => parseHeading(fn.toString()))}
-                )[selector]
-            ))(args)
-        ].apply(this, args);
+    return (template, ...functions) => {
+        const makeSelector = () => {
+            parseTemplate(template);
+            return strategy(functions.map(fn => parseHeading(fn.toString())));
+        }
+
+        return function(...args) {
+            return functions[cachedSelector(template, makeSelector)(args)].apply(this, args);
+        }
     }
 }
 
@@ -34,7 +37,7 @@ function onlyMatch(patterns) {
     const first = firstMatch(patterns);
     return args => assertValid(
         first(args),
-        index => !patterns.slice(index).some(pattern => pattern(args)),
+        index => !patterns.slice(index+1).some(pattern => pattern(args)),
         "Arguments match multiple patterns"
     );
 }
