@@ -45,21 +45,21 @@ function code() {
         return () => {
             const v = varName(keys.length);
             keys.push(key);
-            code.push(`if(${inner(stack[stack.length-1], v)}) return false;`);
+            code.push(`if(${inner(stack[stack.length-1], v, key)}) return false;`);
             stack.push(v);
         }
     }
 
     return {
-        arrayAt: key => add(key, (prev, next) => `!Array.isArray(${next}=${prev}[${next}])`),
-        hashAt: key => add(key, (prev, next) => `!(${next}=${prev}[${next}])||typeof ${next}!=='object'`),
+        arrayAt: key => add(key, (prev, next, key) => `!Array.isArray(${next}=${prev}[${key}])`),
+        hashAt: key => add(key, (prev, next, key) => `!(${next}=${prev}${dotOrSub(key)})||typeof ${next}!=='object'`),
         up: n => () => stack.splice(-n),
 
         result(commands) {
             commands.forEach(cmd => cmd());
             return new Function(
                 '_',
-                `let ${keys.map((key, i) => varName(i)+'='+literal(key)).join(',')};` +
+                `let ${keys.map((_, i) => varName(i)).join(',')};` +
                 code.join('') +
                 'return true;'
             );
@@ -84,4 +84,11 @@ function literal(val) {
         return `"${val.replace(/[\\"]/g, '\\$&')}"`;
     else
         return val.toString();
+}
+
+function dotOrSub(val) {
+    if(typeof val==='string' && /^[a-z_$][a-z0-9_$]*$/.test(val))
+        return `.${val}`;
+    else
+        return `[${literal(val)}]`;
 }
