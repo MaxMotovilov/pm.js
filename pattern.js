@@ -39,31 +39,49 @@ module.exports = function() {
 }
 
 function code() {
-    return {
-        arrayAt: key => ({arrayAt}) => arrayAt(key),
-        hashAt: key => ({hashAt}) => hashAt(key),
-        up: n => ({up}) => up(n),
+    const keys = [], code = [], stack = ['_'];
 
-        result(commands) {
-            return args => {
-                const
-                    stack = [args],
-                    implementations = {
-                        arrayAt(key) {
-                            const value = stack[stack.length-1][key];
-                            return Array.isArray(value) && stack.push(value);
-                        },
-                        hashAt(key) {
-                            const value = stack[stack.length-1][key];
-                            return value && typeof value==='object' && stack.push(value);
-                        },
-                        up(n) {
-                            stack.splice(-n);
-                            return true;
-                        }
-                    }
-                return commands.every(command => command(implementations));
-            }
+    function add(key, inner) {
+        return () => {
+            const v = varName(keys.length);
+            keys.push(key);
+            code.push(`if(${inner(stack[stack.length-1], v)}) return false;`);
+            stack.push(v);
         }
     }
+
+    return {
+        arrayAt: key => add(key, (prev, next) => `!Array.isArray(${next}=${prev}[${next}])`),
+        hashAt: key => add(key, (prev, next) => `!(${next}=${prev}[${next}])||typeof ${next}!=='object'`),
+        up: n => () => stack.splice(-n),
+
+        result(commands) {
+            commands.forEach(cmd => cmd());
+            return new Function(
+                '_',
+                `let ${keys.map((key, i) => varName(i)+'='+literal(key)).join(',')};` +
+                code.join('') +
+                'return true;'
+            );
+        }
+    }
+}
+
+function varName(n) {
+    let name = "";
+    ++n;
+    do {
+        --n;
+        name += String.fromCharCode('a'.charCodeAt(0) + (n%26));
+        n = Math.floor(n/26);
+    } while(n>0);
+
+    return name;
+}
+
+function literal(val) {
+    if(typeof val==='string')
+        return `"${val.replace(/[\\"]/g, '\\$&')}"`;
+    else
+        return val.toString();
 }
