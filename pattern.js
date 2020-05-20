@@ -39,27 +39,28 @@ module.exports = function() {
 }
 
 function code() {
-    const keys = [], code = [], stack = ['_'];
+    const vars = [], code = [], stack = ['_'];
 
     function add(key, inner) {
-        return () => {
-            const v = varName(keys.length);
-            keys.push(key);
-            code.push(`if(${inner(stack[stack.length-1], v, key)}) return false;`);
+        return next => {
+            const v = varName(stack.length-1);
+            code.push(`if(${inner(stack[stack.length-1], v, key, !next || next.up)}) return false;`);
             stack.push(v);
+            if(vars.length+1<stack.length)
+                vars.push(v);
         }
     }
 
     return {
-        arrayAt: key => add(key, (prev, next, key) => `!Array.isArray(${next}=${prev}[${key}])`),
+        arrayAt: key => add(key, (prev, next, key, opt) => `!Array.isArray(${opt ? '' : next+'='}${prev}${dotOrSub(key)})`),
         hashAt: key => add(key, (prev, next, key) => `!(${next}=${prev}${dotOrSub(key)})||typeof ${next}!=='object'`),
-        up: n => () => stack.splice(-n),
+        up: n => Object.assign(() => stack.splice(-n), {up: true}),
 
         result(commands) {
-            commands.forEach(cmd => cmd());
+            commands.forEach((cmd, i) => cmd(commands[i+1]));
             return new Function(
                 '_',
-                `let ${keys.map((_, i) => varName(i)).join(',')};` +
+                `let ${vars.join(',')};` +
                 code.join('') +
                 'return true;'
             );
